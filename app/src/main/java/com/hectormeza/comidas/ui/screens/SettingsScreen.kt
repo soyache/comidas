@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -97,24 +96,24 @@ fun SettingsScreen(
     val scrollFraction by remember {
         derivedStateOf {
             if (listState.firstVisibleItemIndex > 0) 1f
-            else (listState.firstVisibleItemScrollOffset / 120f).coerceIn(0f, 1f)
+            else (listState.firstVisibleItemScrollOffset / 100f).coerceIn(0f, 1f)
         }
     }
 
-    val titleSize = lerp(28.sp, 18.sp, scrollFraction)
-    val barHeight = lerp(72.dp, 54.dp, scrollFraction)
+    val titleSize = lerp(19.sp, 15.sp, scrollFraction)
+    val barHeight = lerp(48.dp, 40.dp, scrollFraction)
 
     Box(modifier = modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
-                start = 20.dp,
-                end = 20.dp,
-                top = 86.dp, // Space for collapsing top bar
+                start = 16.dp,
+                end = 16.dp,
+                top = 52.dp, // Space for collapsing top bar
                 bottom = 96.dp // Space for floating bottom bar
             ),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // 1. Currency Selection Section
             item {
@@ -345,46 +344,30 @@ fun SettingsScreen(
             }
         }
 
-        // Pinned Collapsing Top App Bar
+        // Pinned Collapsing Top App Bar (Zero shadows, ultra-minimal height)
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopCenter),
-            color = WarmBackground.copy(alpha = (0.75f + (scrollFraction * 0.25f)).coerceIn(0f, 1f)),
-            shadowElevation = if (scrollFraction > 0.15f) (scrollFraction * 6).dp else 0.dp
+            color = WarmBackground.copy(alpha = if (scrollFraction > 0.1f) 0.98f else 1f),
+            shadowElevation = 0.dp
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-            ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(barHeight)
-                        .padding(horizontal = 20.dp),
+                        .padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
-                        Text(
-                            text = "AJUSTES",
-                            fontSize = titleSize,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = (-0.5).sp,
-                            color = BurgundyDark
-                        )
-                        if (scrollFraction < 0.5f) {
-                            Text(
-                                text = "MONEDA, PRECIOS Y REGLAS DE DETECCIÓN",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = TextSecondary.copy(alpha = 1f - (scrollFraction * 2f).coerceIn(0f, 1f)),
-                                fontSize = 10.sp,
-                                letterSpacing = 0.8.sp
-                            )
-                        }
-                    }
+                    Text(
+                        text = "AJUSTES",
+                        fontSize = titleSize,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = (-0.5).sp,
+                        color = BurgundyDark
+                    )
                 }
 
                 if (scrollFraction > 0.1f) {

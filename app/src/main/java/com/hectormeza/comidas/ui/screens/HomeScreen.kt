@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -98,34 +97,34 @@ fun HomeScreen(
     val scrollFraction by remember {
         derivedStateOf {
             if (listState.firstVisibleItemIndex > 0) 1f
-            else (listState.firstVisibleItemScrollOffset / 140f).coerceIn(0f, 1f)
+            else (listState.firstVisibleItemScrollOffset / 100f).coerceIn(0f, 1f)
         }
     }
 
-    val logoSize = lerp(36.dp, 24.dp, scrollFraction)
-    val titleSize = lerp(28.sp, 18.sp, scrollFraction)
-    val actionBtnSize = lerp(44.dp, 36.dp, scrollFraction)
-    val iconInsideSize = lerp(18.dp, 15.dp, scrollFraction)
-    val barHeight = lerp(72.dp, 54.dp, scrollFraction)
+    val logoSize = lerp(26.dp, 20.dp, scrollFraction)
+    val titleSize = lerp(19.sp, 15.sp, scrollFraction)
+    val actionBtnSize = lerp(36.dp, 32.dp, scrollFraction)
+    val iconInsideSize = lerp(16.dp, 14.dp, scrollFraction)
+    val barHeight = lerp(48.dp, 40.dp, scrollFraction)
 
     Box(modifier = modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
-                start = 20.dp,
-                end = 20.dp,
-                top = 86.dp, // Space for collapsing top bar
+                start = 16.dp,
+                end = 16.dp,
+                top = 52.dp, // Compact space for minimal top bar
                 bottom = 96.dp // Space for floating bottom bar
             ),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // 1. Section Header: "TODAY'S RAIL" style layout
             item {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 4.dp),
+                        .padding(top = 2.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -160,7 +159,7 @@ fun HomeScreen(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(28.dp)
+                                    .size(26.dp)
                                     .clip(CircleShape)
                                     .background(BurgundyDark),
                                 contentAlignment = Alignment.Center
@@ -169,7 +168,7 @@ fun HomeScreen(
                                     imageVector = Icons.Rounded.GridView,
                                     contentDescription = null,
                                     tint = Color.White,
-                                    modifier = Modifier.size(15.dp)
+                                    modifier = Modifier.size(14.dp)
                                 )
                             }
                         }
@@ -204,7 +203,7 @@ fun HomeScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 4.dp),
+                        .padding(top = 2.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -250,16 +249,16 @@ fun HomeScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(24.dp),
+                                .padding(20.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.ReceiptLong,
                                 contentDescription = null,
                                 tint = TextSecondary,
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(28.dp)
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = "Aún no hay movimientos",
                                 style = MaterialTheme.typography.bodyMedium,
@@ -270,7 +269,7 @@ fun HomeScreen(
                                 text = "Tocá el área de comida de arriba para registrar tu primer tiempo.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = TextSecondary,
-                                modifier = Modifier.padding(top = 4.dp)
+                                modifier = Modifier.padding(top = 2.dp)
                             )
                         }
                     }
@@ -285,30 +284,26 @@ fun HomeScreen(
             }
         }
 
-        // Pinned Collapsing Animated Top App Bar
+        // Compact Flat Top App Bar (Zero shadows, ultra-minimal height)
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopCenter),
-            color = WarmBackground.copy(alpha = (0.75f + (scrollFraction * 0.25f)).coerceIn(0f, 1f)),
-            shadowElevation = if (scrollFraction > 0.15f) (scrollFraction * 6).dp else 0.dp
+            color = WarmBackground.copy(alpha = if (scrollFraction > 0.1f) 0.98f else 1f),
+            shadowElevation = 0.dp
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-            ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(barHeight)
-                        .padding(horizontal = 20.dp),
+                        .padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         BurgerCalculatorLogo(size = logoSize)
-                        Spacer(modifier = Modifier.width(lerp(8.dp, 6.dp, scrollFraction)))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "COMIDAS",
                             fontSize = titleSize,
@@ -319,7 +314,7 @@ fun HomeScreen(
                     }
 
                     // Action buttons
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         // Past meal button
                         Surface(
                             modifier = Modifier
@@ -329,7 +324,7 @@ fun HomeScreen(
                             shape = CircleShape,
                             color = Color.White,
                             border = BorderStroke(1.dp, CardBorder),
-                            shadowElevation = 1.dp
+                            shadowElevation = 0.dp
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
@@ -350,7 +345,7 @@ fun HomeScreen(
                             shape = CircleShape,
                             color = Color.White,
                             border = BorderStroke(1.dp, CardBorder),
-                            shadowElevation = 1.dp
+                            shadowElevation = 0.dp
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
