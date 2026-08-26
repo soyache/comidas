@@ -32,6 +32,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.CalendarToday
 import androidx.compose.material.icons.rounded.Check
@@ -75,6 +76,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hectormeza.comidas.model.AppCurrency
 import com.hectormeza.comidas.model.MealType
+import com.hectormeza.comidas.ui.components.AddCustomCurrencyDialog
 import com.hectormeza.comidas.ui.components.BurgerCalculatorLogo
 import com.hectormeza.comidas.ui.theme.BreakfastAccent
 import com.hectormeza.comidas.ui.theme.BurgundyDark
@@ -98,6 +100,7 @@ fun OnboardingScreen(
     availableCurrencies: List<AppCurrency>,
     mealPrices: Map<MealType, Double>,
     onCurrencySelected: (AppCurrency) -> Unit,
+    onAddCustomCurrency: (AppCurrency) -> Unit,
     onUpdateMealPrice: (MealType, Double) -> Unit,
     onFinishOnboarding: () -> Unit,
     modifier: Modifier = Modifier
@@ -174,7 +177,8 @@ fun OnboardingScreen(
                         0 -> OnboardingCurrencyStep(
                             currentCurrency = currentCurrency,
                             availableCurrencies = availableCurrencies,
-                            onCurrencySelected = onCurrencySelected
+                            onCurrencySelected = onCurrencySelected,
+                            onAddCustomCurrency = onAddCustomCurrency
                         )
                         1 -> OnboardingPricesStep(
                             currency = currentCurrency,
@@ -295,8 +299,11 @@ fun OnboardingScreen(
 private fun OnboardingCurrencyStep(
     currentCurrency: AppCurrency,
     availableCurrencies: List<AppCurrency>,
-    onCurrencySelected: (AppCurrency) -> Unit
+    onCurrencySelected: (AppCurrency) -> Unit,
+    onAddCustomCurrency: (AppCurrency) -> Unit
 ) {
+    var showAddCustomCurrencyDialog by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -393,8 +400,45 @@ private fun OnboardingCurrencyStep(
                             border = if (isSelected) null else BorderStroke(1.dp, CardBorder)
                         )
                     }
+
+                    // Button "+ Otra moneda"
+                    FilterChip(
+                        selected = false,
+                        onClick = { showAddCustomCurrencyDialog = true },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Rounded.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = BurgundyDark
+                            )
+                        },
+                        label = {
+                            Text(
+                                text = "Personalizar moneda",
+                                fontWeight = FontWeight.Bold,
+                                color = BurgundyDark
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = Color.White,
+                            labelColor = BurgundyDark
+                        ),
+                        border = BorderStroke(1.dp, BurgundyDark.copy(alpha = 0.35f))
+                    )
                 }
             }
+        }
+
+        if (showAddCustomCurrencyDialog) {
+            AddCustomCurrencyDialog(
+                onDismiss = { showAddCustomCurrencyDialog = false },
+                onConfirm = { newCurrency ->
+                    onAddCustomCurrency(newCurrency)
+                    onCurrencySelected(newCurrency)
+                    showAddCustomCurrencyDialog = false
+                }
+            )
         }
     }
 }
@@ -837,6 +881,7 @@ fun OnboardingScreenPreview() {
                 MealType.DINNER to 4.0
             ),
             onCurrencySelected = {},
+            onAddCustomCurrency = {},
             onUpdateMealPrice = { _, _ -> },
             onFinishOnboarding = {}
         )

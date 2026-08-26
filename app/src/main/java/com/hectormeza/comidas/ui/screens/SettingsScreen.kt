@@ -42,6 +42,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -65,6 +66,7 @@ import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import com.hectormeza.comidas.model.AppCurrency
 import com.hectormeza.comidas.model.MealType
+import com.hectormeza.comidas.ui.components.AddCustomCurrencyDialog
 import com.hectormeza.comidas.ui.theme.BreakfastAccent
 import com.hectormeza.comidas.ui.theme.BurgundyDark
 import com.hectormeza.comidas.ui.theme.CardBorder
@@ -422,111 +424,6 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun AddCustomCurrencyDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (AppCurrency) -> Unit
-) {
-    var symbolInput by remember { mutableStateOf("") }
-    var codeInput by remember { mutableStateOf("") }
-    var nameInput by remember { mutableStateOf("") }
-
-    val isValid = symbolInput.isNotBlank() && codeInput.isNotBlank()
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "Nueva Moneda Personalizada",
-                fontWeight = FontWeight.Bold,
-                color = BurgundyDark
-            )
-        },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = "Ingresá el símbolo y código de tu moneda local.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
-                )
-
-                OutlinedTextField(
-                    value = symbolInput,
-                    onValueChange = { symbolInput = it.take(6) },
-                    label = { Text("Símbolo (ej. Q, L, S/, Bs.)") },
-                    placeholder = { Text("ej. Q") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                OutlinedTextField(
-                    value = codeInput,
-                    onValueChange = { codeInput = it.uppercase().take(5) },
-                    label = { Text("Código / Abreviatura (ej. GTQ, BOB)") },
-                    placeholder = { Text("ej. GTQ") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                OutlinedTextField(
-                    value = nameInput,
-                    onValueChange = { nameInput = it },
-                    label = { Text("Nombre (opcional)") },
-                    placeholder = { Text("ej. Quetzal guatemalteco") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                if (isValid) {
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = SoftCardBg,
-                        border = BorderStroke(1.dp, CardBorder),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "Vista previa: ${symbolInput.trim()} 130.00",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = BurgundyDark,
-                            modifier = Modifier.padding(12.dp)
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (isValid) {
-                        val newCurrency = AppCurrency(
-                            code = codeInput.trim().uppercase(),
-                            symbol = symbolInput.trim(),
-                            displayName = nameInput.ifBlank { codeInput.trim().uppercase() },
-                            flagEmoji = "🪙",
-                            isCustom = true
-                        )
-                        onConfirm(newCurrency)
-                    }
-                },
-                enabled = isValid,
-                colors = ButtonDefaults.buttonColors(containerColor = BurgundyDark)
-            ) {
-                Text("Guardar y Usar")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancelar", color = TextSecondary)
-            }
-        }
-    )
-}
-
-@Composable
 private fun MealPriceSettingCard(
     mealType: MealType,
     currentPrice: Double,
@@ -600,12 +497,21 @@ private fun MealPriceSettingCard(
                         }
                     }
                 },
-                prefix = { Text("${currency.symbol} ", fontWeight = FontWeight.Bold, color = BurgundyDark) },
+                prefix = { Text("${currency.symbol} ", fontWeight = FontWeight.Black, color = BurgundyDark) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.width(125.dp),
                 shape = RoundedCornerShape(12.dp),
-                textStyle = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                textStyle = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black, color = TextPrimary),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary,
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    focusedBorderColor = BurgundyDark,
+                    unfocusedBorderColor = CardBorder,
+                    cursorColor = BurgundyDark
+                )
             )
         }
     }

@@ -75,6 +75,7 @@ class MainActivity : ComponentActivity() {
                                 availableCurrencies = uiState.availableCurrencies,
                                 mealPrices = uiState.mealPrices,
                                 onCurrencySelected = { viewModel.selectCurrency(it) },
+                                onAddCustomCurrency = { viewModel.addCustomCurrency(it) },
                                 onUpdateMealPrice = { mealType, price ->
                                     viewModel.updateMealPrice(mealType, price)
                                 },

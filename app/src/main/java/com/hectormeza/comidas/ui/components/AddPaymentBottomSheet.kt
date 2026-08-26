@@ -122,7 +122,7 @@ fun AddPaymentBottomSheet(
                 prefix = {
                     Text(
                         text = "${currency.symbol} ",
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Black,
                         color = MintPayment
                     )
                 },
@@ -130,10 +130,17 @@ fun AddPaymentBottomSheet(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
+                textStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = TextPrimary),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = BurgundyDark,
-                    focusedLabelColor = BurgundyDark,
-                    cursorColor = BurgundyDark
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary,
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    focusedBorderColor = MintPayment,
+                    unfocusedBorderColor = CardBorder,
+                    focusedLabelColor = MintPayment,
+                    unfocusedLabelColor = TextSecondary,
+                    cursorColor = MintPayment
                 )
             )
 
@@ -144,8 +151,7 @@ fun AddPaymentBottomSheet(
                 text = "ACCESOS DIRECTOS DE ABONO:",
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
-                color = TextSecondary,
-                letterSpacing = 0.8.sp
+                color = TextSecondary
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -202,7 +208,19 @@ fun AddPaymentBottomSheet(
                 },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
+                textStyle = MaterialTheme.typography.bodyMedium.copy(color = TextPrimary),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary,
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    focusedBorderColor = BurgundyDark,
+                    unfocusedBorderColor = CardBorder,
+                    focusedLabelColor = BurgundyDark,
+                    unfocusedLabelColor = TextSecondary,
+                    cursorColor = BurgundyDark
+                )
             )
 
             Spacer(modifier = Modifier.height(24.dp))
