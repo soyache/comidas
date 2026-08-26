@@ -35,6 +35,7 @@ import com.hectormeza.comidas.ui.components.FloatingBottomBar
 import com.hectormeza.comidas.ui.components.ModernTab
 import com.hectormeza.comidas.ui.screens.HistoryScreen
 import com.hectormeza.comidas.ui.screens.HomeScreen
+import com.hectormeza.comidas.ui.screens.OnboardingScreen
 import com.hectormeza.comidas.ui.screens.SettingsScreen
 import com.hectormeza.comidas.ui.screens.SplashScreen
 import com.hectormeza.comidas.ui.theme.ComidasTheme
@@ -51,6 +52,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ComidasTheme {
+                val viewModel: ComidasViewModel = viewModel(
+                    factory = ComidasViewModel.provideFactory(LocalContext.current.applicationContext as Application)
+                )
+                val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
                 var showSplash by remember { mutableStateOf(true) }
 
                 Crossfade(
@@ -62,7 +68,23 @@ class MainActivity : ComponentActivity() {
                             onSplashFinished = { showSplash = false }
                         )
                     } else {
-                        ComidasMainApp()
+                        // If user hasn't completed onboarding, show welcome guide
+                        if (!uiState.hasCompletedOnboarding && !uiState.isLoading) {
+                            OnboardingScreen(
+                                currentCurrency = uiState.currentCurrency,
+                                availableCurrencies = uiState.availableCurrencies,
+                                mealPrices = uiState.mealPrices,
+                                onCurrencySelected = { viewModel.selectCurrency(it) },
+                                onUpdateMealPrice = { mealType, price ->
+                                    viewModel.updateMealPrice(mealType, price)
+                                },
+                                onFinishOnboarding = {
+                                    viewModel.completeOnboarding()
+                                }
+                            )
+                        } else {
+                            ComidasMainApp(viewModel = viewModel)
+                        }
                     }
                 }
             }
@@ -73,9 +95,7 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ComidasMainApp(
-    viewModel: ComidasViewModel = viewModel(
-        factory = ComidasViewModel.provideFactory(LocalContext.current.applicationContext as Application)
-    )
+    viewModel: ComidasViewModel
 ) {
     var currentTab by remember { mutableStateOf(ModernTab.HOME) }
     var showPaymentSheet by remember { mutableStateOf(false) }
@@ -86,7 +106,7 @@ fun ComidasMainApp(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
-    // Collect reactive state from Room DB via ViewModel
+    // Collect reactive state from SQLite DB via ViewModel
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -168,10 +188,13 @@ fun ComidasMainApp(
                             onUpdateMealPrice = { mealType, newPrice ->
                                 viewModel.updateMealPrice(mealType, newPrice)
                             },
+                            onShowWelcomeGuide = {
+                                viewModel.showOnboardingGuide()
+                            },
                             onResetDemoData = {
-                                viewModel.resetDemoData()
+                                viewModel.resetData()
                                 coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("Datos de demostración restablecidos en base de datos")
+                                    snackbarHostState.showSnackbar("Valores restablecidos por defecto")
                                 }
                             }
                         )
@@ -192,7 +215,7 @@ fun ComidasMainApp(
                         viewModel.addPayment(amount, note)
                         coroutineScope.launch {
                             snackbarHostState.showSnackbar(
-                                message = "Abono de ${uiState.currentCurrency.format(amount)} guardado en base de datos",
+                                message = "Abono de ${uiState.currentCurrency.format(amount)} guardado",
                                 duration = SnackbarDuration.Short
                             )
                         }

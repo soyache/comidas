@@ -13,7 +13,7 @@ enum class MealType(
     BREAKFAST(
         id = "breakfast",
         displayName = "Desayuno",
-        defaultPrice = 80.0,
+        defaultPrice = 3.0,
         timeRangeDescription = "06:00 - 11:59",
         startHour = 6,
         endHour = 11
@@ -21,7 +21,7 @@ enum class MealType(
     LUNCH(
         id = "lunch",
         displayName = "Almuerzo",
-        defaultPrice = 130.0,
+        defaultPrice = 5.0,
         timeRangeDescription = "12:00 - 17:59",
         startHour = 12,
         endHour = 17
@@ -29,7 +29,7 @@ enum class MealType(
     DINNER(
         id = "dinner",
         displayName = "Cena",
-        defaultPrice = 100.0,
+        defaultPrice = 4.0,
         timeRangeDescription = "18:00 - 05:59",
         startHour = 18,
         endHour = 5

@@ -86,6 +86,7 @@ fun SettingsScreen(
     onAddCustomCurrency: (AppCurrency) -> Unit,
     mealPrices: Map<MealType, Double>,
     onUpdateMealPrice: (MealType, Double) -> Unit,
+    onShowWelcomeGuide: () -> Unit,
     onResetDemoData: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -318,7 +319,32 @@ fun SettingsScreen(
                 }
             }
 
-            // 4. Reset Demo Data
+            // 4. Welcome Guide Action Button
+            item {
+                Button(
+                    onClick = onShowWelcomeGuide,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = BurgundyDark)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.AccessTime,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Ver Guía de Bienvenida",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+
+            // 5. Reset Data
             item {
                 OutlinedButton(
                     onClick = onResetDemoData,
@@ -336,7 +362,7 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Restablecer Datos de Demostración",
+                        text = "Restablecer a Valores por Defecto",
                         color = BurgundyDark,
                         fontWeight = FontWeight.Bold
                     )
@@ -590,16 +616,17 @@ private fun MealPriceSettingCard(
 fun SettingsScreenPreview() {
     ComidasTheme {
         SettingsScreen(
-            currentCurrency = AppCurrency.CORDOBA,
+            currentCurrency = AppCurrency.USD,
             availableCurrencies = AppCurrency.PREDEFINED_CURRENCIES,
             onCurrencySelected = {},
             onAddCustomCurrency = {},
             mealPrices = mapOf(
-                MealType.BREAKFAST to 80.0,
-                MealType.LUNCH to 130.0,
-                MealType.DINNER to 100.0
+                MealType.BREAKFAST to 3.0,
+                MealType.LUNCH to 5.0,
+                MealType.DINNER to 4.0
             ),
             onUpdateMealPrice = { _, _ -> },
+            onShowWelcomeGuide = {},
             onResetDemoData = {}
         )
     }

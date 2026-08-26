@@ -25,8 +25,9 @@ data class ComidasUiState(
         MealType.LUNCH to MealType.LUNCH.defaultPrice,
         MealType.DINNER to MealType.DINNER.defaultPrice
     ),
-    val currentCurrency: AppCurrency = AppCurrency.CORDOBA,
+    val currentCurrency: AppCurrency = AppCurrency.USD,
     val availableCurrencies: List<AppCurrency> = AppCurrency.PREDEFINED_CURRENCIES,
+    val hasCompletedOnboarding: Boolean = false,
     val isLoading: Boolean = false
 ) {
     val totalMealsAmount: Double
@@ -51,13 +52,15 @@ class ComidasViewModel(
         repository.transactions,
         repository.mealPrices,
         repository.activeCurrency,
-        repository.availableCurrencies
-    ) { transactions, prices, activeCurrency, availableCurrencies ->
+        repository.availableCurrencies,
+        repository.hasCompletedOnboarding
+    ) { transactions, prices, activeCurrency, availableCurrencies, hasCompletedOnboarding ->
         ComidasUiState(
             transactions = transactions,
             mealPrices = prices,
             currentCurrency = activeCurrency,
             availableCurrencies = availableCurrencies,
+            hasCompletedOnboarding = hasCompletedOnboarding,
             isLoading = false
         )
     }.stateIn(
@@ -69,6 +72,20 @@ class ComidasViewModel(
     init {
         viewModelScope.launch {
             repository.initialize()
+        }
+    }
+
+    // Complete onboarding guide
+    fun completeOnboarding() {
+        viewModelScope.launch {
+            repository.completeOnboarding()
+        }
+    }
+
+    // Show onboarding guide again from settings
+    fun showOnboardingGuide() {
+        viewModelScope.launch {
+            repository.showOnboardingAgain()
         }
     }
 
@@ -144,10 +161,10 @@ class ComidasViewModel(
         }
     }
 
-    // Reset database to initial demo state
-    fun resetDemoData() {
+    // Reset database to clean initial state (No demo data)
+    fun resetData() {
         viewModelScope.launch {
-            repository.resetToDemoData()
+            repository.resetData()
         }
     }
 

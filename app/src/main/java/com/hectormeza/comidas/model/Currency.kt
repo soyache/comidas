@@ -22,9 +22,9 @@ data class AppCurrency(
     }
 
     companion object {
+        val USD = AppCurrency("USD", "$", "Dólar estadounidense", "🇺🇸")
         val CORDOBA = AppCurrency("NIO", "C$", "Córdoba nicaragüense", "🇳🇮")
         val HNL = AppCurrency("HNL", "L", "Lempira hondureño", "🇭🇳")
-        val USD = AppCurrency("USD", "$", "Dólar estadounidense", "🇺🇸")
         val EUR = AppCurrency("EUR", "€", "Euro", "🇪🇺")
         val MXN = AppCurrency("MXN", "MX$", "Peso mexicano", "🇲🇽")
         val COP = AppCurrency("COP", "COP$", "Peso colombiano", "🇨🇴")
@@ -32,9 +32,9 @@ data class AppCurrency(
         val ARS = AppCurrency("ARS", "ARS$", "Peso argentino", "🇦🇷")
 
         val PREDEFINED_CURRENCIES = listOf(
+            USD,
             CORDOBA,
             HNL,
-            USD,
             EUR,
             MXN,
             COP,
