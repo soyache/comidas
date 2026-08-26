@@ -5,13 +5,12 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.hectormeza.comidas.data.local.ComidasDatabase
+import com.hectormeza.comidas.data.local.ComidasDatabaseHelper
 import com.hectormeza.comidas.data.repository.ComidasRepository
 import com.hectormeza.comidas.model.AppCurrency
 import com.hectormeza.comidas.model.MealType
 import com.hectormeza.comidas.model.Transaction
 import com.hectormeza.comidas.model.TransactionType
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -69,7 +68,7 @@ class ComidasViewModel(
 
     init {
         viewModelScope.launch {
-            repository.initializeDefaultsIfEmpty()
+            repository.initialize()
         }
     }
 
@@ -157,13 +156,8 @@ class ComidasViewModel(
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    val db = ComidasDatabase.getInstance(application)
-                    val repository = ComidasRepository(
-                        transactionDao = db.transactionDao(),
-                        mealPriceDao = db.mealPriceDao(),
-                        settingDao = db.settingDao(),
-                        customCurrencyDao = db.customCurrencyDao()
-                    )
+                    val dbHelper = ComidasDatabaseHelper(application)
+                    val repository = ComidasRepository(dbHelper)
                     return ComidasViewModel(application, repository) as T
                 }
             }

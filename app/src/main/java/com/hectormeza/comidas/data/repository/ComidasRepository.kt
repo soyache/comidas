@@ -1,148 +1,109 @@
 package com.hectormeza.comidas.data.repository
 
-import com.hectormeza.comidas.data.local.dao.CustomCurrencyDao
-import com.hectormeza.comidas.data.local.dao.MealPriceDao
-import com.hectormeza.comidas.data.local.dao.SettingDao
-import com.hectormeza.comidas.data.local.dao.TransactionDao
-import com.hectormeza.comidas.data.local.entity.AppSettingEntity
-import com.hectormeza.comidas.data.local.entity.CustomCurrencyEntity
-import com.hectormeza.comidas.data.local.entity.MealPriceEntity
-import com.hectormeza.comidas.data.local.entity.TransactionEntity
+import com.hectormeza.comidas.data.local.ComidasDatabaseHelper
 import com.hectormeza.comidas.model.AppCurrency
 import com.hectormeza.comidas.model.MealType
 import com.hectormeza.comidas.model.Transaction
 import com.hectormeza.comidas.model.TransactionType
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.util.UUID
 
 class ComidasRepository(
-    private val transactionDao: TransactionDao,
-    private val mealPriceDao: MealPriceDao,
-    private val settingDao: SettingDao,
-    private val customCurrencyDao: CustomCurrencyDao
+    private val dbHelper: ComidasDatabaseHelper
 ) {
-    // 1. Transactions Stream
-    val transactions: Flow<List<Transaction>> = transactionDao.getAllTransactions().map { list ->
-        list.map { it.toDomain() }
-    }
+    private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
+    val transactions: StateFlow<List<Transaction>> = _transactions.asStateFlow()
 
-    // 2. Meal Prices Stream
-    val mealPrices: Flow<Map<MealType, Double>> = mealPriceDao.getAllPrices().map { list ->
-        val map = mutableMapOf(
+    private val _mealPrices = MutableStateFlow<Map<MealType, Double>>(
+        mapOf(
             MealType.BREAKFAST to MealType.BREAKFAST.defaultPrice,
             MealType.LUNCH to MealType.LUNCH.defaultPrice,
             MealType.DINNER to MealType.DINNER.defaultPrice
         )
-        list.forEach { entity ->
-            val mealType = entity.toDomainMealType()
-            if (mealType != null) {
-                map[mealType] = entity.price
-            }
-        }
-        map
-    }
+    )
+    val mealPrices: StateFlow<Map<MealType, Double>> = _mealPrices.asStateFlow()
 
-    // 3. Available Currencies (Predefined + Custom from DB)
-    val availableCurrencies: Flow<List<AppCurrency>> = customCurrencyDao.getAllCustomCurrencies().map { customList ->
-        val predefined = AppCurrency.PREDEFINED_CURRENCIES
-        val custom = customList.map { it.toDomain() }
-        predefined + custom
-    }
+    private val _availableCurrencies = MutableStateFlow<List<AppCurrency>>(AppCurrency.PREDEFINED_CURRENCIES)
+    val availableCurrencies: StateFlow<List<AppCurrency>> = _availableCurrencies.asStateFlow()
 
-    // 4. Active Currency Stream
-    val activeCurrency: Flow<AppCurrency> = combine(
-        settingDao.getSetting(KEY_ACTIVE_CURRENCY_CODE),
-        availableCurrencies
-    ) { activeCode, allCurrencies ->
-        if (activeCode == null) {
-            AppCurrency.CORDOBA
+    private val _activeCurrency = MutableStateFlow(AppCurrency.CORDOBA)
+    val activeCurrency: StateFlow<AppCurrency> = _activeCurrency.asStateFlow()
+
+    suspend fun initialize() {
+        // Load custom currencies
+        val customCurrencies = dbHelper.getAllCustomCurrencies()
+        val allCurrencies = AppCurrency.PREDEFINED_CURRENCIES + customCurrencies
+        _availableCurrencies.value = allCurrencies
+
+        // Load active currency setting
+        val activeCode = dbHelper.getSetting(KEY_ACTIVE_CURRENCY_CODE)
+        if (activeCode != null) {
+            _activeCurrency.value = allCurrencies.find { it.code == activeCode } ?: AppCurrency.CORDOBA
         } else {
-            allCurrencies.find { it.code == activeCode } ?: AppCurrency.CORDOBA
+            dbHelper.setSetting(KEY_ACTIVE_CURRENCY_CODE, AppCurrency.CORDOBA.code)
+            _activeCurrency.value = AppCurrency.CORDOBA
+        }
+
+        // Load or seed meal prices
+        val savedPrices = dbHelper.getAllPrices()
+        _mealPrices.value = savedPrices
+
+        // Load transactions
+        val savedTx = dbHelper.getAllTransactions()
+        if (savedTx.isEmpty()) {
+            // Seed initial demo transactions on very first launch
+            resetToDemoData()
+        } else {
+            _transactions.value = savedTx
         }
     }
 
-    // Initialize initial database seeds if empty
-    suspend fun initializeDefaultsIfEmpty() {
-        // Seed default prices
-        MealType.entries.forEach { meal ->
-            mealPriceDao.insertOrUpdate(
-                MealPriceEntity(
-                    mealType = meal.name,
-                    price = meal.defaultPrice
-                )
-            )
-        }
-
-        // Set default active currency if not set
-        settingDao.setSetting(
-            AppSettingEntity(
-                key = KEY_ACTIVE_CURRENCY_CODE,
-                value = AppCurrency.CORDOBA.code
-            )
-        )
-    }
-
-    // Insert a new transaction (Meal or Payment)
     suspend fun addTransaction(transaction: Transaction) {
-        transactionDao.insert(TransactionEntity.fromDomain(transaction))
+        dbHelper.insertTransaction(transaction)
+        _transactions.value = dbHelper.getAllTransactions()
     }
 
-    // Delete a transaction
     suspend fun deleteTransaction(transaction: Transaction) {
-        transactionDao.delete(TransactionEntity.fromDomain(transaction))
+        dbHelper.deleteTransaction(transaction.id)
+        _transactions.value = dbHelper.getAllTransactions()
     }
 
-    // Update price of a meal type
     suspend fun updateMealPrice(mealType: MealType, price: Double) {
-        mealPriceDao.insertOrUpdate(
-            MealPriceEntity(
-                mealType = mealType.name,
-                price = price
-            )
-        )
+        dbHelper.setMealPrice(mealType, price)
+        _mealPrices.value = dbHelper.getAllPrices()
     }
 
-    // Set active currency code
     suspend fun setActiveCurrency(currency: AppCurrency) {
-        settingDao.setSetting(
-            AppSettingEntity(
-                key = KEY_ACTIVE_CURRENCY_CODE,
-                value = currency.code
-            )
-        )
+        dbHelper.setSetting(KEY_ACTIVE_CURRENCY_CODE, currency.code)
+        _activeCurrency.value = currency
     }
 
-    // Save a custom currency
     suspend fun addCustomCurrency(currency: AppCurrency) {
-        customCurrencyDao.insertCustomCurrency(
-            CustomCurrencyEntity.fromDomain(currency)
-        )
+        dbHelper.insertCustomCurrency(currency)
+        val customCurrencies = dbHelper.getAllCustomCurrencies()
+        _availableCurrencies.value = AppCurrency.PREDEFINED_CURRENCIES + customCurrencies
         setActiveCurrency(currency)
     }
 
-    // Reset data to fresh demo state
     suspend fun resetToDemoData() {
-        transactionDao.clearAll()
-        customCurrencyDao.clearAll()
+        dbHelper.clearTransactions()
+        dbHelper.clearCustomCurrencies()
 
         // Reset default prices
         MealType.entries.forEach { meal ->
-            mealPriceDao.insertOrUpdate(
-                MealPriceEntity(
-                    mealType = meal.name,
-                    price = meal.defaultPrice
-                )
-            )
+            dbHelper.setMealPrice(meal, meal.defaultPrice)
         }
+        _mealPrices.value = dbHelper.getAllPrices()
 
-        // Reset active currency to NIO
+        // Reset currency to NIO
         setActiveCurrency(AppCurrency.CORDOBA)
+        _availableCurrencies.value = AppCurrency.PREDEFINED_CURRENCIES
 
         // Seed demo transactions
         val now = System.currentTimeMillis()
-        val demoTransactions = listOf(
+        val demoList = listOf(
             Transaction(
                 id = UUID.randomUUID().toString(),
                 type = TransactionType.MEAL,
@@ -168,7 +129,10 @@ class ComidasRepository(
             )
         )
 
-        demoTransactions.forEach { addTransaction(it) }
+        for (tx in demoList) {
+            dbHelper.insertTransaction(tx)
+        }
+        _transactions.value = dbHelper.getAllTransactions()
     }
 
     companion object {
