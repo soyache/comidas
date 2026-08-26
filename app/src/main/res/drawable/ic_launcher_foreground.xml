@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 1. TOP BUN (Pure Golden Warm Bun) -->
+    <path
+        android:fillColor="#E89B5F"
+        android:pathData="M34,44 C34,30 42,24 54,24 C66,24 74,30 74,44 Z" />
+
+    <!-- Sesame seeds on top bun -->
+    <path
+        android:fillColor="#FDE68A"
+        android:pathData="M40,34 h2.5 v1.5 h-2.5 z M48,28 h2.5 v1.5 h-2.5 z M57,28 h2.5 v1.5 h-2.5 z M65,34 h2.5 v1.5 h-2.5 z M52,35 h2.5 v1.5 h-2.5 z" />
+
+    <!-- 2. LETTUCE LAYER (Wavy emerald leaf) -->
+    <path
+        android:fillColor="#10B981"
+        android:pathData="M31,45 C34,47 38,45 42,47 C46,45 50,47 54,45 C58,47 62,45 66,47 C70,45 74,47 77,45 C78,46 76,48 74,48 C70,48 66,46 62,48 C58,46 54,48 50,46 C46,48 42,46 38,48 C34,46 32,48 31,45 Z" />
+
+    <!-- 3. CHEESE SLICE (Melted golden cheddar triangle corner) -->
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M33,47 h42 l-6,7 l-7,-7 l-10,0 l-5,6 l-5,-6 z" />
+
+    <!-- 4. PATTY / CALCULATOR KEYPAD (Rich roast brown) -->
+    <path
+        android:fillColor="#6A381F"
+        android:pathData="M33,49 h42 a4,4 0 0,1 4,4 v4 a4,4 0 0,1 -4,4 h-42 a4,4 0 0,1 -4,-4 v-4 a4,4 0 0,1 4,-4 z" />
+
+    <!-- Calculator Keys on Patty: [+] [-] [x] [=] -->
+    <!-- Key 1: [+] -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M39,53 h1.5 v1.5 h-1.5 v1.5 h-1 v-1.5 h-1.5 v-1 h1.5 v-1.5 h1 z" />
+
+    <!-- Key 2: [-] -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M48,55 h4 v1 h-4 z" />
+
+    <!-- Key 3: [x] -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M57,53.5 l1.2,1.5 l1.2,-1.5 l0.8,0.6 l-1.2,1.4 l1.2,1.4 l-0.8,0.6 l-1.2,-1.5 l-1.2,1.5 l-0.8,-0.6 l1.2,-1.4 l-1.2,-1.4 z" />
+
+    <!-- Key 4: [=] -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M66,54 h4 v1 h-4 z M66,56.5 h4 v1 h-4 z" />
+
+    <!-- 5. BOTTOM BUN (Rounded golden bottom) -->
+    <path
+        android:fillColor="#E89B5F"
+        android:pathData="M35,63 h38 a4,4 0 0,1 4,4 v2 a6,6 0 0,1 -6,6 h-30 a6,6 0 0,1 -6,-6 v-2 a4,4 0 0,1 4,-4 z" />
+
+</vector>

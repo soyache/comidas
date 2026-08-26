@@ -1,0 +1,47 @@
+package com.hectormeza.comidas.model
+
+import java.util.Calendar
+
+enum class MealType(
+    val id: String,
+    val displayName: String,
+    val defaultPrice: Double,
+    val timeRangeDescription: String,
+    val startHour: Int,
+    val endHour: Int
+) {
+    BREAKFAST(
+        id = "breakfast",
+        displayName = "Desayuno",
+        defaultPrice = 80.0,
+        timeRangeDescription = "06:00 - 11:59",
+        startHour = 6,
+        endHour = 11
+    ),
+    LUNCH(
+        id = "lunch",
+        displayName = "Almuerzo",
+        defaultPrice = 130.0,
+        timeRangeDescription = "12:00 - 17:59",
+        startHour = 12,
+        endHour = 17
+    ),
+    DINNER(
+        id = "dinner",
+        displayName = "Cena",
+        defaultPrice = 100.0,
+        timeRangeDescription = "18:00 - 05:59",
+        startHour = 18,
+        endHour = 5
+    );
+
+    companion object {
+        fun detectCurrent(hour: Int = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)): MealType {
+            return when (hour) {
+                in 6..11 -> BREAKFAST
+                in 12..17 -> LUNCH
+                else -> DINNER
+            }
+        }
+    }
+}

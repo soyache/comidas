@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="108" height="108">
+  <!-- Background Circle (Deep Burgundy) -->
+  <rect width="108" height="108" rx="28" fill="#240A18"/>
+  <circle cx="54" cy="54" r="42" fill="#381427"/>
+
+  <!-- 1. TOP BUN (Clean Golden Bun with Sesame Seeds) -->
+  <path d="M34,44 C34,30 42,24 54,24 C66,24 74,30 74,44 Z" fill="#E89B5F"/>
+  <circle cx="40" cy="34" r="1.2" fill="#FDE68A"/>
+  <circle cx="48" cy="28" r="1.2" fill="#FDE68A"/>
+  <circle cx="57" cy="28" r="1.2" fill="#FDE68A"/>
+  <circle cx="65" cy="34" r="1.2" fill="#FDE68A"/>
+  <circle cx="52" cy="35" r="1.2" fill="#FDE68A"/>
+
+  <!-- 2. LETTUCE LAYER (Emerald Wavy Leaf) -->
+  <path d="M31,45 C34,47.5 38,45 42,47.5 C46,45 50,47.5 54,45 C58,47.5 62,45 66,47.5 C70,45 74,47.5 77,45 C78,48 75,48.5 73,48.5 C69,48.5 65,46.5 61,48.5 C57,46.5 53,48.5 49,46.5 C45,48.5 41,46.5 37,48.5 C33,46.5 30,48 31,45 Z" fill="#10B981"/>
+
+  <!-- 3. CHEESE SLICE (Melted Cheddar Gold) -->
+  <path d="M33,47.5 L75,47.5 L68,55 L61,47.5 L51,47.5 L45,54 L40,47.5 Z" fill="#F59E0B"/>
+
+  <!-- 4. PATTY / CALCULATOR KEYPAD (Roast Brown) -->
+  <rect x="32" y="49.5" width="44" height="11" rx="4.5" fill="#6A381F"/>
+
+  <!-- Calculator Keys: [+] [-] [x] [=] in Pure White -->
+  <!-- Key 1: [+] -->
+  <path d="M38.5,54.5 h3.5 v1.2 h-3.5 z M39.65,53.35 h1.2 v3.5 h-1.2 z" fill="#FFFFFF"/>
+  <!-- Key 2: [-] -->
+  <rect x="47.5" y="54" width="4" height="1.2" rx="0.5" fill="#FFFFFF"/>
+  <!-- Key 3: [x] -->
+  <path d="M57,53.5 l3,3 M60,53.5 l-3,3" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- Key 4: [=] -->
+  <rect x="65.5" y="53.2" width="4" height="1.1" rx="0.5" fill="#FFFFFF"/>
+  <rect x="65.5" y="55.2" width="4" height="1.1" rx="0.5" fill="#FFFFFF"/>
+
+  <!-- 5. BOTTOM BUN (Golden Bun Base) -->
+  <path d="M35,62 L73,62 C77,62 77,71 71,71 L37,71 C31,71 31,62 35,62 Z" fill="#E89B5F"/>
+</svg>
