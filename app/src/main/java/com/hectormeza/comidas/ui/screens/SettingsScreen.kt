@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -45,6 +47,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,6 +62,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import com.hectormeza.comidas.model.AppCurrency
 import com.hectormeza.comidas.model.MealType
@@ -71,6 +75,7 @@ import com.hectormeza.comidas.ui.theme.LunchAccent
 import com.hectormeza.comidas.ui.theme.SoftCardBg
 import com.hectormeza.comidas.ui.theme.TextPrimary
 import com.hectormeza.comidas.ui.theme.TextSecondary
+import com.hectormeza.comidas.ui.theme.WarmBackground
 import java.util.Locale
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -86,265 +91,311 @@ fun SettingsScreen(
     modifier: Modifier = Modifier
 ) {
     var showCustomCurrencyDialog by remember { mutableStateOf(false) }
+    val listState = rememberLazyListState()
 
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-        // Title
-        item {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = "AJUSTES",
-                    style = MaterialTheme.typography.headlineLarge.copy(
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = (-0.5).sp
-                    ),
-                    color = BurgundyDark
-                )
-                Text(
-                    text = "MONEDA, PRECIOS Y REGLAS DE DETECCIÓN",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = TextSecondary,
-                    fontSize = 11.sp,
-                    letterSpacing = 0.8.sp
-                )
-            }
+    // Smooth scroll interpolation factor
+    val scrollFraction by remember {
+        derivedStateOf {
+            if (listState.firstVisibleItemIndex > 0) 1f
+            else (listState.firstVisibleItemScrollOffset / 120f).coerceIn(0f, 1f)
         }
+    }
 
-        // 1. Currency Selection Section
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Rounded.CurrencyExchange,
-                    contentDescription = null,
-                    tint = BurgundyDark,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "TIPO DE MONEDA",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = TextSecondary,
-                    letterSpacing = 1.sp
-                )
-            }
-        }
+    val titleSize = lerp(28.sp, 18.sp, scrollFraction)
+    val barHeight = lerp(72.dp, 54.dp, scrollFraction)
 
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = SoftCardBg),
-                border = BorderStroke(1.dp, CardBorder)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(18.dp)
-                ) {
-                    Text(
-                        text = "Seleccioná o agregá tu moneda personalizada:",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
+    Box(modifier = modifier.fillMaxSize()) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = 20.dp,
+                end = 20.dp,
+                top = 86.dp, // Space for collapsing top bar
+                bottom = 96.dp // Space for floating bottom bar
+            ),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            // 1. Currency Selection Section
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Rounded.CurrencyExchange,
+                        contentDescription = null,
+                        tint = BurgundyDark,
+                        modifier = Modifier.size(18.dp)
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "TIPO DE MONEDA",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = TextSecondary,
+                        letterSpacing = 1.sp
+                    )
+                }
+            }
 
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = SoftCardBg),
+                    border = BorderStroke(1.dp, CardBorder)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp)
                     ) {
-                        availableCurrencies.forEach { currency ->
-                            val isSelected = currentCurrency.code == currency.code && currentCurrency.symbol == currency.symbol
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { onCurrencySelected(currency) },
-                                leadingIcon = if (isSelected) {
-                                    {
-                                        Icon(
-                                            imageVector = Icons.Rounded.Check,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(16.dp),
-                                            tint = Color.White
+                        Text(
+                            text = "Seleccioná o agregá tu moneda personalizada:",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            availableCurrencies.forEach { currency ->
+                                val isSelected = currentCurrency.code == currency.code && currentCurrency.symbol == currency.symbol
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = { onCurrencySelected(currency) },
+                                    leadingIcon = if (isSelected) {
+                                        {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Check,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp),
+                                                tint = Color.White
+                                            )
+                                        }
+                                    } else null,
+                                    label = {
+                                        Text(
+                                            text = "${currency.flagEmoji} ${currency.code} (${currency.symbol})",
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                         )
-                                    }
-                                } else null,
-                                label = {
-                                    Text(
-                                        text = "${currency.flagEmoji} ${currency.code} (${currency.symbol})",
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = BurgundyDark,
+                                        selectedLabelColor = Color.White,
+                                        containerColor = Color.White,
+                                        labelColor = TextPrimary
+                                    ),
+                                    border = if (isSelected) null else BorderStroke(1.dp, CardBorder)
+                                )
+                            }
+
+                            // Add Custom Currency Action Chip
+                            FilterChip(
+                                selected = false,
+                                onClick = { showCustomCurrencyDialog = true },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Add,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = BurgundyDark
                                     )
                                 },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = BurgundyDark,
-                                    selectedLabelColor = Color.White,
-                                    containerColor = Color.White,
-                                    labelColor = TextPrimary
-                                ),
-                                border = if (isSelected) null else BorderStroke(1.dp, CardBorder)
+                                label = {
+                                    Text(
+                                        text = "Personalizada",
+                                        color = BurgundyDark,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                },
+                                colors = FilterChipDefaults.filterChipColors(containerColor = Color.White),
+                                border = BorderStroke(1.dp, BurgundyDark.copy(alpha = 0.5f))
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 2. Price Configuration Section Header
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Rounded.Sell,
+                        contentDescription = null,
+                        tint = BurgundyDark,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "PRECIOS POR TIEMPO DE COMIDA",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = TextSecondary,
+                        letterSpacing = 1.sp
+                    )
+                }
+            }
+
+            // Breakfast Price Card
+            item {
+                MealPriceSettingCard(
+                    mealType = MealType.BREAKFAST,
+                    currentPrice = mealPrices[MealType.BREAKFAST] ?: MealType.BREAKFAST.defaultPrice,
+                    currency = currentCurrency,
+                    icon = Icons.Rounded.WbSunny,
+                    accentColor = BreakfastAccent,
+                    onPriceChanged = { onUpdateMealPrice(MealType.BREAKFAST, it) }
+                )
+            }
+
+            // Lunch Price Card
+            item {
+                MealPriceSettingCard(
+                    mealType = MealType.LUNCH,
+                    currentPrice = mealPrices[MealType.LUNCH] ?: MealType.LUNCH.defaultPrice,
+                    currency = currentCurrency,
+                    icon = Icons.Rounded.LunchDining,
+                    accentColor = LunchAccent,
+                    onPriceChanged = { onUpdateMealPrice(MealType.LUNCH, it) }
+                )
+            }
+
+            // Dinner Price Card
+            item {
+                MealPriceSettingCard(
+                    mealType = MealType.DINNER,
+                    currentPrice = mealPrices[MealType.DINNER] ?: MealType.DINNER.defaultPrice,
+                    currency = currentCurrency,
+                    icon = Icons.Rounded.Bedtime,
+                    accentColor = DinnerAccent,
+                    onPriceChanged = { onUpdateMealPrice(MealType.DINNER, it) }
+                )
+            }
+
+            // 3. Detection Rules Information Card
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = SoftCardBg),
+                    border = BorderStroke(1.dp, CardBorder)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Rounded.AccessTime,
+                                contentDescription = null,
+                                tint = BurgundyDark,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Detección Automática por Horario",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
                             )
                         }
 
-                        // Add Custom Currency Action Chip
-                        FilterChip(
-                            selected = false,
-                            onClick = { showCustomCurrencyDialog = true },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Rounded.Add,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = BurgundyDark
-                                )
-                            },
-                            label = {
-                                Text(
-                                    text = "Personalizada",
-                                    color = BurgundyDark,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(containerColor = Color.White),
-                            border = BorderStroke(1.dp, BurgundyDark.copy(alpha = 0.5f))
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Text(
+                            text = "La aplicación detecta el tiempo de comida según la hora en la que se registra la transacción:\n\n" +
+                                    "• Desayuno: 06:00 a 11:59\n" +
+                                    "• Almuerzo: 12:00 a 17:59\n" +
+                                    "• Cena: 18:00 a 05:59\n\n" +
+                                    "También podés cambiar manualmente el tiempo antes de registrar o agregar comidas de días anteriores.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary,
+                            lineHeight = 20.sp
                         )
                     }
                 }
             }
-        }
 
-        // 2. Price Configuration Section Header
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Rounded.Sell,
-                    contentDescription = null,
-                    tint = BurgundyDark,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "PRECIOS POR TIEMPO DE COMIDA",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = TextSecondary,
-                    letterSpacing = 1.sp
-                )
-            }
-        }
-
-        // Breakfast Price Card
-        item {
-            MealPriceSettingCard(
-                mealType = MealType.BREAKFAST,
-                currentPrice = mealPrices[MealType.BREAKFAST] ?: MealType.BREAKFAST.defaultPrice,
-                currency = currentCurrency,
-                icon = Icons.Rounded.WbSunny,
-                accentColor = BreakfastAccent,
-                onPriceChanged = { onUpdateMealPrice(MealType.BREAKFAST, it) }
-            )
-        }
-
-        // Lunch Price Card
-        item {
-            MealPriceSettingCard(
-                mealType = MealType.LUNCH,
-                currentPrice = mealPrices[MealType.LUNCH] ?: MealType.LUNCH.defaultPrice,
-                currency = currentCurrency,
-                icon = Icons.Rounded.LunchDining,
-                accentColor = LunchAccent,
-                onPriceChanged = { onUpdateMealPrice(MealType.LUNCH, it) }
-            )
-        }
-
-        // Dinner Price Card
-        item {
-            MealPriceSettingCard(
-                mealType = MealType.DINNER,
-                currentPrice = mealPrices[MealType.DINNER] ?: MealType.DINNER.defaultPrice,
-                currency = currentCurrency,
-                icon = Icons.Rounded.Bedtime,
-                accentColor = DinnerAccent,
-                onPriceChanged = { onUpdateMealPrice(MealType.DINNER, it) }
-            )
-        }
-
-        // 3. Detection Rules Information Card
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = SoftCardBg),
-                border = BorderStroke(1.dp, CardBorder)
-            ) {
-                Column(
+            // 4. Reset Demo Data
+            item {
+                OutlinedButton(
+                    onClick = onResetDemoData,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(18.dp)
+                        .height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, CardBorder)
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Rounded.AccessTime,
-                            contentDescription = null,
-                            tint = BurgundyDark,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Detección Automática por Horario",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
+                    Icon(
+                        imageVector = Icons.Rounded.Refresh,
+                        contentDescription = null,
+                        tint = BurgundyDark,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "La aplicación detecta el tiempo de comida según la hora en la que se registra la transacción:\n\n" +
-                                "• Desayuno: 06:00 a 11:59\n" +
-                                "• Almuerzo: 12:00 a 17:59\n" +
-                                "• Cena: 18:00 a 05:59\n\n" +
-                                "También podés cambiar manualmente el tiempo antes de registrar o agregar comidas de días anteriores.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary,
-                        lineHeight = 20.sp
+                        text = "Restablecer Datos de Demostración",
+                        color = BurgundyDark,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
         }
 
-        // 4. Reset Demo Data
-        item {
-            OutlinedButton(
-                onClick = onResetDemoData,
+        // Pinned Collapsing Top App Bar
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.TopCenter),
+            color = WarmBackground.copy(alpha = (0.75f + (scrollFraction * 0.25f)).coerceIn(0f, 1f)),
+            shadowElevation = if (scrollFraction > 0.15f) (scrollFraction * 6).dp else 0.dp
+        ) {
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, CardBorder)
+                    .statusBarsPadding()
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.Refresh,
-                    contentDescription = null,
-                    tint = BurgundyDark,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Restablecer Datos de Demostración",
-                    color = BurgundyDark,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(barHeight)
+                        .padding(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "AJUSTES",
+                            fontSize = titleSize,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = (-0.5).sp,
+                            color = BurgundyDark
+                        )
+                        if (scrollFraction < 0.5f) {
+                            Text(
+                                text = "MONEDA, PRECIOS Y REGLAS DE DETECCIÓN",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = TextSecondary.copy(alpha = 1f - (scrollFraction * 2f).coerceIn(0f, 1f)),
+                                fontSize = 10.sp,
+                                letterSpacing = 0.8.sp
+                            )
+                        }
+                    }
+                }
 
-        // Bottom spacer for floating bottom bar
-        item {
-            Spacer(modifier = Modifier.height(72.dp))
+                if (scrollFraction > 0.1f) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(CardBorder.copy(alpha = scrollFraction))
+                    )
+                }
+            }
         }
     }
 
