@@ -1,5 +1,6 @@
 package com.hectormeza.comidas
 
+import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -8,7 +9,6 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -16,22 +16,19 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hectormeza.comidas.model.AppCurrency
 import com.hectormeza.comidas.model.MealType
-import com.hectormeza.comidas.model.Transaction
-import com.hectormeza.comidas.model.TransactionType
 import com.hectormeza.comidas.ui.components.AddPastMealBottomSheet
 import com.hectormeza.comidas.ui.components.AddPaymentBottomSheet
 import com.hectormeza.comidas.ui.components.FloatingBottomBar
@@ -42,11 +39,11 @@ import com.hectormeza.comidas.ui.screens.SettingsScreen
 import com.hectormeza.comidas.ui.screens.SplashScreen
 import com.hectormeza.comidas.ui.theme.ComidasTheme
 import com.hectormeza.comidas.ui.theme.WarmBackground
+import com.hectormeza.comidas.ui.viewmodel.ComidasViewModel
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.UUID
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,12 +72,12 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ComidasMainApp() {
+fun ComidasMainApp(
+    viewModel: ComidasViewModel = viewModel(
+        factory = ComidasViewModel.provideFactory(LocalContext.current.applicationContext as Application)
+    )
+) {
     var currentTab by remember { mutableStateOf(ModernTab.HOME) }
-    val availableCurrencies = remember {
-        mutableStateListOf(*AppCurrency.PREDEFINED_CURRENCIES.toTypedArray())
-    }
-    var currentCurrency by remember { mutableStateOf(AppCurrency.CORDOBA) }
     var showPaymentSheet by remember { mutableStateOf(false) }
     var showPastMealSheet by remember { mutableStateOf(false) }
 
@@ -89,76 +86,8 @@ fun ComidasMainApp() {
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
-    // Configured Prices
-    val mealPrices = remember {
-        mutableStateMapOf(
-            MealType.BREAKFAST to MealType.BREAKFAST.defaultPrice,
-            MealType.LUNCH to MealType.LUNCH.defaultPrice,
-            MealType.DINNER to MealType.DINNER.defaultPrice
-        )
-    }
-
-    // Mock initial transactions for interactive UI testing
-    val transactions = remember {
-        mutableStateListOf(
-            Transaction(
-                id = UUID.randomUUID().toString(),
-                type = TransactionType.MEAL,
-                amount = 130.0,
-                mealType = MealType.LUNCH,
-                quantity = 1,
-                timestamp = System.currentTimeMillis() - 1000 * 60 * 60 * 3
-            ),
-            Transaction(
-                id = UUID.randomUUID().toString(),
-                type = TransactionType.MEAL,
-                amount = 80.0,
-                mealType = MealType.BREAKFAST,
-                quantity = 1,
-                timestamp = System.currentTimeMillis() - 1000 * 60 * 60 * 7
-            ),
-            Transaction(
-                id = UUID.randomUUID().toString(),
-                type = TransactionType.PAYMENT,
-                amount = 100.0,
-                note = "Abono quincenal",
-                timestamp = System.currentTimeMillis() - 1000 * 60 * 60 * 24
-            ),
-            Transaction(
-                id = UUID.randomUUID().toString(),
-                type = TransactionType.MEAL,
-                amount = 100.0,
-                mealType = MealType.DINNER,
-                quantity = 1,
-                timestamp = System.currentTimeMillis() - 1000 * 60 * 60 * 28
-            )
-        )
-    }
-
-    // Derived Calculations
-    val totalMealsAmount by remember {
-        derivedStateOf {
-            transactions.filter { it.type == TransactionType.MEAL }.sumOf { it.amount }
-        }
-    }
-
-    val totalPaymentsAmount by remember {
-        derivedStateOf {
-            transactions.filter { it.type == TransactionType.PAYMENT }.sumOf { it.amount }
-        }
-    }
-
-    val totalMealsCount by remember {
-        derivedStateOf {
-            transactions.filter { it.type == TransactionType.MEAL }.sumOf { it.quantity }
-        }
-    }
-
-    val totalDebt by remember {
-        derivedStateOf {
-            (totalMealsAmount - totalPaymentsAmount).coerceAtLeast(0.0)
-        }
-    }
+    // Collect reactive state from Room DB via ViewModel
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -176,27 +105,20 @@ fun ComidasMainApp() {
                 when (tab) {
                     ModernTab.HOME -> {
                         HomeScreen(
-                            totalDebt = totalDebt,
-                            totalMealsCount = totalMealsCount,
-                            totalPaymentsAmount = totalPaymentsAmount,
-                            currency = currentCurrency,
-                            mealPrices = mealPrices,
-                            recentTransactions = transactions,
+                            totalDebt = uiState.totalDebt,
+                            totalMealsCount = uiState.totalMealsCount,
+                            totalPaymentsAmount = uiState.totalPaymentsAmount,
+                            currency = uiState.currentCurrency,
+                            mealPrices = uiState.mealPrices,
+                            recentTransactions = uiState.transactions,
                             onAddMealWithQuantity = { mealType, qty ->
-                                val unitPrice = mealPrices[mealType] ?: mealType.defaultPrice
-                                val totalAmount = unitPrice * qty
-                                val newTx = Transaction(
-                                    id = UUID.randomUUID().toString(),
-                                    type = TransactionType.MEAL,
-                                    amount = totalAmount,
-                                    mealType = mealType,
-                                    quantity = qty,
-                                    timestamp = System.currentTimeMillis()
-                                )
-                                transactions.add(0, newTx)
+                                viewModel.addMeal(mealType, qty)
+                                val unitPrice = uiState.mealPrices[mealType] ?: mealType.defaultPrice
+                                val total = unitPrice * qty
+                                val title = if (qty > 1) "$qty× ${mealType.displayName}" else mealType.displayName
                                 coroutineScope.launch {
                                     snackbarHostState.showSnackbar(
-                                        message = "¡${newTx.displayTitle} registrado! (+${currentCurrency.format(totalAmount)})",
+                                        message = "¡$title registrado! (+${uiState.currentCurrency.format(total)})",
                                         duration = SnackbarDuration.Short
                                     )
                                 }
@@ -215,17 +137,17 @@ fun ComidasMainApp() {
 
                     ModernTab.HISTORY -> {
                         HistoryScreen(
-                            transactions = transactions,
-                            currency = currentCurrency
+                            transactions = uiState.transactions,
+                            currency = uiState.currentCurrency
                         )
                     }
 
                     ModernTab.SETTINGS -> {
                         SettingsScreen(
-                            currentCurrency = currentCurrency,
-                            availableCurrencies = availableCurrencies,
+                            currentCurrency = uiState.currentCurrency,
+                            availableCurrencies = uiState.availableCurrencies,
                             onCurrencySelected = { newCurrency ->
-                                currentCurrency = newCurrency
+                                viewModel.selectCurrency(newCurrency)
                                 coroutineScope.launch {
                                     snackbarHostState.showSnackbar(
                                         message = "Moneda cambiada a ${newCurrency.displayName} (${newCurrency.symbol})",
@@ -234,28 +156,22 @@ fun ComidasMainApp() {
                                 }
                             },
                             onAddCustomCurrency = { customCurrency ->
-                                if (!availableCurrencies.any { it.code == customCurrency.code && it.symbol == customCurrency.symbol }) {
-                                    availableCurrencies.add(customCurrency)
-                                }
-                                currentCurrency = customCurrency
+                                viewModel.addCustomCurrency(customCurrency)
                                 coroutineScope.launch {
                                     snackbarHostState.showSnackbar(
-                                        message = "Moneda personalizada agregada: ${customCurrency.displayName} (${customCurrency.symbol})",
+                                        message = "Moneda personalizada guardada: ${customCurrency.displayName} (${customCurrency.symbol})",
                                         duration = SnackbarDuration.Short
                                     )
                                 }
                             },
-                            mealPrices = mealPrices,
+                            mealPrices = uiState.mealPrices,
                             onUpdateMealPrice = { mealType, newPrice ->
-                                mealPrices[mealType] = newPrice
+                                viewModel.updateMealPrice(mealType, newPrice)
                             },
                             onResetDemoData = {
-                                transactions.clear()
-                                mealPrices[MealType.BREAKFAST] = MealType.BREAKFAST.defaultPrice
-                                mealPrices[MealType.LUNCH] = MealType.LUNCH.defaultPrice
-                                mealPrices[MealType.DINNER] = MealType.DINNER.defaultPrice
+                                viewModel.resetDemoData()
                                 coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("Datos de demostración restablecidos")
+                                    snackbarHostState.showSnackbar("Datos de demostración restablecidos en base de datos")
                                 }
                             }
                         )
@@ -267,24 +183,16 @@ fun ComidasMainApp() {
             if (showPaymentSheet) {
                 AddPaymentBottomSheet(
                     sheetState = paymentSheetState,
-                    currentDebt = totalDebt,
-                    currency = currentCurrency,
+                    currentDebt = uiState.totalDebt,
+                    currency = uiState.currentCurrency,
                     onDismiss = {
                         showPaymentSheet = false
                     },
                     onConfirmPayment = { amount, note ->
-                        val newTx = Transaction(
-                            id = UUID.randomUUID().toString(),
-                            type = TransactionType.PAYMENT,
-                            amount = amount,
-                            note = note.ifBlank { null },
-                            timestamp = System.currentTimeMillis()
-                        )
-                        val index = transactions.indexOfFirst { it.timestamp <= newTx.timestamp }.let { if (it == -1) transactions.size else it }
-                        transactions.add(index, newTx)
+                        viewModel.addPayment(amount, note)
                         coroutineScope.launch {
                             snackbarHostState.showSnackbar(
-                                message = "Abono de ${currentCurrency.format(amount)} registrado",
+                                message = "Abono de ${uiState.currentCurrency.format(amount)} guardado en base de datos",
                                 duration = SnackbarDuration.Short
                             )
                         }
@@ -296,31 +204,22 @@ fun ComidasMainApp() {
             if (showPastMealSheet) {
                 AddPastMealBottomSheet(
                     sheetState = pastMealSheetState,
-                    currency = currentCurrency,
-                    mealPrices = mealPrices,
+                    currency = uiState.currentCurrency,
+                    mealPrices = uiState.mealPrices,
                     onDismiss = {
                         showPastMealSheet = false
                     },
                     onConfirmPastMeal = { mealType, quantity, timestamp, note ->
-                        val unitPrice = mealPrices[mealType] ?: mealType.defaultPrice
+                        viewModel.addPastMeal(mealType, quantity, timestamp, note)
+                        val unitPrice = uiState.mealPrices[mealType] ?: mealType.defaultPrice
                         val totalAmount = unitPrice * quantity
-                        val newTx = Transaction(
-                            id = UUID.randomUUID().toString(),
-                            type = TransactionType.MEAL,
-                            amount = totalAmount,
-                            mealType = mealType,
-                            quantity = quantity,
-                            note = note,
-                            timestamp = timestamp
-                        )
-                        val index = transactions.indexOfFirst { it.timestamp <= newTx.timestamp }.let { if (it == -1) transactions.size else it }
-                        transactions.add(index, newTx)
-
+                        val title = if (quantity > 1) "$quantity× ${mealType.displayName}" else mealType.displayName
                         val sdf = SimpleDateFormat("dd MMM", Locale.getDefault())
                         val dateStr = sdf.format(Date(timestamp))
+
                         coroutineScope.launch {
                             snackbarHostState.showSnackbar(
-                                message = "¡${newTx.displayTitle} del $dateStr registrado! (+${currentCurrency.format(totalAmount)})",
+                                message = "¡$title del $dateStr guardado! (+${uiState.currentCurrency.format(totalAmount)})",
                                 duration = SnackbarDuration.Short
                             )
                         }
@@ -342,6 +241,6 @@ fun ComidasMainApp() {
 @Composable
 fun ComidasMainAppPreview() {
     ComidasTheme {
-        ComidasMainApp()
+        // Preview dummy
     }
 }
