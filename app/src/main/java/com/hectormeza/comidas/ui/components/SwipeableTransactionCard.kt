@@ -1,9 +1,8 @@
 package com.hectormeza.comidas.ui.components
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
-import androidx.compose.foundation.background
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
@@ -27,14 +26,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -44,10 +38,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.hectormeza.comidas.model.AppCurrency
 import com.hectormeza.comidas.model.Transaction
 import com.hectormeza.comidas.ui.theme.BurgundyDark
@@ -64,22 +56,12 @@ fun SwipeableTransactionCard(
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
+    val coroutineScope = rememberCoroutineScope()
     val actionButtonsWidth = 140.dp
     val maxSwipePx = with(density) { actionButtonsWidth.toPx() }
 
+    val offsetX = remember { Animatable(0f) }
     var isRevealed by remember { mutableStateOf(false) }
-    var rawDragOffset by remember { mutableFloatStateOf(0f) }
-
-    val animatedOffset by animateFloatAsState(
-        targetValue = if (isRevealed) -maxSwipePx else 0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMediumLow
-        ),
-        label = "swipeOffset"
-    )
-
-    val currentOffset = if (rawDragOffset != 0f) rawDragOffset else animatedOffset
 
     Box(
         modifier = modifier
@@ -87,7 +69,7 @@ fun SwipeableTransactionCard(
             .height(IntrinsicSize.Min)
             .clip(RoundedCornerShape(20.dp))
     ) {
-        // 1. Actions behind the card (Revealed on swipe left)
+        // 1. Action Buttons behind the card (Revealed smoothly on swipe left)
         Row(
             modifier = Modifier
                 .matchParentSize()
@@ -95,15 +77,17 @@ fun SwipeableTransactionCard(
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Edit Action Button
+            // Edit Button
             Surface(
                 modifier = Modifier
                     .width(64.dp)
                     .fillMaxHeight()
                     .clip(RoundedCornerShape(16.dp))
                     .clickable {
-                        isRevealed = false
-                        rawDragOffset = 0f
+                        coroutineScope.launch {
+                            offsetX.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
+                            isRevealed = false
+                        }
                         onEdit()
                     },
                 color = BurgundyDark,
@@ -113,31 +97,28 @@ fun SwipeableTransactionCard(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Edit,
-                            contentDescription = "Editar",
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Rounded.Edit,
+                        contentDescription = "Editar",
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.width(6.dp))
 
-            // Delete Action Button
+            // Delete Button
             Surface(
                 modifier = Modifier
                     .width(64.dp)
                     .fillMaxHeight()
                     .clip(RoundedCornerShape(16.dp))
                     .clickable {
-                        isRevealed = false
-                        rawDragOffset = 0f
+                        coroutineScope.launch {
+                            offsetX.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
+                            isRevealed = false
+                        }
                         onDelete()
                     },
                 color = CoralAccent,
@@ -157,21 +138,35 @@ fun SwipeableTransactionCard(
             }
         }
 
-        // 2. Foreground Transaction Item Card (Draggable horizontally to the left)
+        // 2. Foreground Card with continuous, flicker-free gesture animation
         Box(
             modifier = Modifier
-                .offset { IntOffset(currentOffset.roundToInt(), 0) }
+                .offset { IntOffset(offsetX.value.roundToInt(), 0) }
                 .fillMaxWidth()
                 .draggable(
                     orientation = Orientation.Horizontal,
                     state = rememberDraggableState { delta ->
-                        val newOffset = (rawDragOffset + delta).coerceIn(-maxSwipePx * 1.15f, 0f)
-                        rawDragOffset = newOffset
+                        coroutineScope.launch {
+                            val newOffset = (offsetX.value + delta).coerceIn(-maxSwipePx * 1.15f, 0f)
+                            offsetX.snapTo(newOffset)
+                        }
                     },
-                    onDragStopped = {
-                        val threshold = -maxSwipePx * 0.4f
-                        isRevealed = rawDragOffset < threshold
-                        rawDragOffset = 0f
+                    onDragStopped = { velocity ->
+                        coroutineScope.launch {
+                            val targetOffset = if (velocity < -500f || offsetX.value < -maxSwipePx * 0.4f) {
+                                -maxSwipePx
+                            } else {
+                                0f
+                            }
+                            offsetX.animateTo(
+                                targetValue = targetOffset,
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioLowBouncy,
+                                    stiffness = Spring.StiffnessMediumLow
+                                )
+                            )
+                            isRevealed = targetOffset != 0f
+                        }
                     }
                 )
                 .clickable(
@@ -179,8 +174,10 @@ fun SwipeableTransactionCard(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
                 ) {
-                    isRevealed = false
-                    rawDragOffset = 0f
+                    coroutineScope.launch {
+                        offsetX.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
+                        isRevealed = false
+                    }
                 }
         ) {
             TransactionItemRow(

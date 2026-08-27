@@ -86,6 +86,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -116,8 +117,21 @@ fun EditTransactionBottomSheet(
     }
     var showDatePickerDialog by remember { mutableStateOf(false) }
 
+    val initialUtcDateMillis = remember(selectedTimestamp) {
+        val localCal = Calendar.getInstance().apply { timeInMillis = selectedTimestamp }
+        Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+            clear()
+            set(
+                localCal.get(Calendar.YEAR),
+                localCal.get(Calendar.MONTH),
+                localCal.get(Calendar.DAY_OF_MONTH),
+                0, 0, 0
+            )
+        }.timeInMillis
+    }
+
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = selectedTimestamp
+        initialSelectedDateMillis = initialUtcDateMillis
     )
 
     val unitPrice = mealPrices[selectedMealType] ?: selectedMealType.defaultPrice
@@ -520,18 +534,24 @@ fun EditTransactionBottomSheet(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        val pickedMillis = datePickerState.selectedDateMillis
-                        if (pickedMillis != null) {
-                            // Preserve original time of day or set to noon
+                        val pickedUtc = datePickerState.selectedDateMillis
+                        if (pickedUtc != null) {
+                            val utcCal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                                timeInMillis = pickedUtc
+                            }
                             val originalCal = Calendar.getInstance().apply {
                                 timeInMillis = selectedTimestamp
                             }
-                            val pickedCal = Calendar.getInstance().apply {
-                                timeInMillis = pickedMillis
+                            val localCal = Calendar.getInstance().apply {
+                                set(Calendar.YEAR, utcCal.get(Calendar.YEAR))
+                                set(Calendar.MONTH, utcCal.get(Calendar.MONTH))
+                                set(Calendar.DAY_OF_MONTH, utcCal.get(Calendar.DAY_OF_MONTH))
                                 set(Calendar.HOUR_OF_DAY, originalCal.get(Calendar.HOUR_OF_DAY))
                                 set(Calendar.MINUTE, originalCal.get(Calendar.MINUTE))
+                                set(Calendar.SECOND, 0)
+                                set(Calendar.MILLISECOND, 0)
                             }
-                            selectedTimestamp = pickedCal.timeInMillis
+                            selectedTimestamp = localCal.timeInMillis
                         }
                         showDatePickerDialog = false
                     }
