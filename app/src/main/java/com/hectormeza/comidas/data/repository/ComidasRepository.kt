@@ -80,6 +80,11 @@ class ComidasRepository(
         _transactions.value = dbHelper.getAllTransactions()
     }
 
+    suspend fun updateTransaction(transaction: Transaction) {
+        dbHelper.insertTransaction(transaction)
+        _transactions.value = dbHelper.getAllTransactions()
+    }
+
     suspend fun deleteTransaction(transaction: Transaction) {
         dbHelper.deleteTransaction(transaction.id)
         _transactions.value = dbHelper.getAllTransactions()

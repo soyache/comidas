@@ -56,6 +56,7 @@ import com.hectormeza.comidas.ui.components.BurgerCalculatorLogo
 import com.hectormeza.comidas.ui.components.ConfirmMealDialog
 import com.hectormeza.comidas.ui.components.FloatingBalanceDock
 import com.hectormeza.comidas.ui.components.HeroMealShowcase
+import com.hectormeza.comidas.ui.components.SwipeableTransactionCard
 import com.hectormeza.comidas.ui.components.TransactionItemRow
 import com.hectormeza.comidas.ui.theme.BurgundyDark
 import com.hectormeza.comidas.ui.theme.CardBorder
@@ -77,6 +78,8 @@ fun HomeScreen(
     mealPrices: Map<MealType, Double>,
     recentTransactions: List<Transaction>,
     onAddMealWithQuantity: (MealType, Int) -> Unit,
+    onEditTransaction: (Transaction) -> Unit,
+    onDeleteTransaction: (Transaction) -> Unit,
     onOpenPaymentSheet: () -> Unit,
     onOpenPastMealSheet: () -> Unit,
     onNavigateToHistory: () -> Unit,
@@ -276,9 +279,11 @@ fun HomeScreen(
                 }
             } else {
                 items(recentTransactions.take(3), key = { it.id }) { transaction ->
-                    TransactionItemRow(
+                    SwipeableTransactionCard(
                         transaction = transaction,
-                        currency = currency
+                        currency = currency,
+                        onEdit = { onEditTransaction(transaction) },
+                        onDelete = { onDeleteTransaction(transaction) }
                     )
                 }
             }
@@ -414,6 +419,8 @@ fun HomeScreenPreview() {
                 )
             ),
             onAddMealWithQuantity = { _, _ -> },
+            onEditTransaction = {},
+            onDeleteTransaction = {},
             onOpenPaymentSheet = {},
             onOpenPastMealSheet = {},
             onNavigateToHistory = {}

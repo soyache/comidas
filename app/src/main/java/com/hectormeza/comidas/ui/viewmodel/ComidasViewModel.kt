@@ -140,6 +140,20 @@ class ComidasViewModel(
         }
     }
 
+    // Update an existing transaction (edit)
+    fun updateTransaction(transaction: Transaction) {
+        viewModelScope.launch {
+            repository.updateTransaction(transaction)
+        }
+    }
+
+    // Delete an existing transaction
+    fun deleteTransaction(transaction: Transaction) {
+        viewModelScope.launch {
+            repository.deleteTransaction(transaction)
+        }
+    }
+
     // Update meal price in database
     fun updateMealPrice(mealType: MealType, price: Double) {
         viewModelScope.launch {

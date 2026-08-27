@@ -57,6 +57,7 @@ import com.hectormeza.comidas.model.AppCurrency
 import com.hectormeza.comidas.model.MealType
 import com.hectormeza.comidas.model.Transaction
 import com.hectormeza.comidas.model.TransactionType
+import com.hectormeza.comidas.ui.components.SwipeableTransactionCard
 import com.hectormeza.comidas.ui.components.TransactionItemRow
 import com.hectormeza.comidas.ui.theme.BurgundyDark
 import com.hectormeza.comidas.ui.theme.CardBorder
@@ -90,6 +91,8 @@ enum class DateRangePreset(val label: String) {
 fun HistoryScreen(
     transactions: List<Transaction>,
     currency: AppCurrency,
+    onEditTransaction: (Transaction) -> Unit,
+    onDeleteTransaction: (Transaction) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var selectedTypeFilter by remember { mutableStateOf(HistoryTypeFilter.ALL) }
@@ -383,9 +386,11 @@ fun HistoryScreen(
                 }
             } else {
                 items(filteredTransactions, key = { it.id }) { transaction ->
-                    TransactionItemRow(
+                    SwipeableTransactionCard(
                         transaction = transaction,
-                        currency = currency
+                        currency = currency,
+                        onEdit = { onEditTransaction(transaction) },
+                        onDelete = { onDeleteTransaction(transaction) }
                     )
                 }
             }
@@ -545,7 +550,9 @@ fun HistoryScreenPreview() {
                     note = "Pago quincenal"
                 )
             ),
-            currency = AppCurrency.CORDOBA
+            currency = AppCurrency.USD,
+            onEditTransaction = {},
+            onDeleteTransaction = {}
         )
     }
 }

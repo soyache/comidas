@@ -7,13 +7,31 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,14 +41,19 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hectormeza.comidas.model.AppCurrency
 import com.hectormeza.comidas.model.MealType
+import com.hectormeza.comidas.model.Transaction
 import com.hectormeza.comidas.ui.components.AddPastMealBottomSheet
 import com.hectormeza.comidas.ui.components.AddPaymentBottomSheet
+import com.hectormeza.comidas.ui.components.EditTransactionBottomSheet
 import com.hectormeza.comidas.ui.components.FloatingBottomBar
 import com.hectormeza.comidas.ui.components.ModernTab
 import com.hectormeza.comidas.ui.screens.HistoryScreen
@@ -38,7 +61,11 @@ import com.hectormeza.comidas.ui.screens.HomeScreen
 import com.hectormeza.comidas.ui.screens.OnboardingScreen
 import com.hectormeza.comidas.ui.screens.SettingsScreen
 import com.hectormeza.comidas.ui.screens.SplashScreen
+import com.hectormeza.comidas.ui.theme.BurgundyDark
 import com.hectormeza.comidas.ui.theme.ComidasTheme
+import com.hectormeza.comidas.ui.theme.CoralAccent
+import com.hectormeza.comidas.ui.theme.TextPrimary
+import com.hectormeza.comidas.ui.theme.TextSecondary
 import com.hectormeza.comidas.ui.theme.WarmBackground
 import com.hectormeza.comidas.ui.viewmodel.ComidasViewModel
 import kotlinx.coroutines.launch
@@ -102,8 +129,13 @@ fun ComidasMainApp(
     var showPaymentSheet by remember { mutableStateOf(false) }
     var showPastMealSheet by remember { mutableStateOf(false) }
 
+    var transactionToEdit by remember { mutableStateOf<Transaction?>(null) }
+    var transactionToDelete by remember { mutableStateOf<Transaction?>(null) }
+
     val paymentSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val pastMealSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val editSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
@@ -144,6 +176,12 @@ fun ComidasMainApp(
                                     )
                                 }
                             },
+                            onEditTransaction = { tx ->
+                                transactionToEdit = tx
+                            },
+                            onDeleteTransaction = { tx ->
+                                transactionToDelete = tx
+                            },
                             onOpenPaymentSheet = {
                                 showPaymentSheet = true
                             },
@@ -159,7 +197,13 @@ fun ComidasMainApp(
                     ModernTab.HISTORY -> {
                         HistoryScreen(
                             transactions = uiState.transactions,
-                            currency = uiState.currentCurrency
+                            currency = uiState.currentCurrency,
+                            onEditTransaction = { tx ->
+                                transactionToEdit = tx
+                            },
+                            onDeleteTransaction = { tx ->
+                                transactionToDelete = tx
+                            }
                         )
                     }
 
@@ -201,6 +245,105 @@ fun ComidasMainApp(
                         )
                     }
                 }
+            }
+
+            // Edit Transaction BottomSheet
+            transactionToEdit?.let { tx ->
+                EditTransactionBottomSheet(
+                    sheetState = editSheetState,
+                    transaction = tx,
+                    currency = uiState.currentCurrency,
+                    mealPrices = uiState.mealPrices,
+                    onDismiss = {
+                        transactionToEdit = null
+                    },
+                    onConfirmEdit = { updatedTx ->
+                        viewModel.updateTransaction(updatedTx)
+                        transactionToEdit = null
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = "Movimiento actualizado correctamente",
+                                duration = SnackbarDuration.Short
+                            )
+                        }
+                    }
+                )
+            }
+
+            // Delete Confirmation Dialog
+            transactionToDelete?.let { tx ->
+                val isMeal = tx.type == com.hectormeza.comidas.model.TransactionType.MEAL
+                AlertDialog(
+                    onDismissRequest = { transactionToDelete = null },
+                    containerColor = Color.White,
+                    shape = RoundedCornerShape(24.dp),
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Rounded.Delete,
+                            contentDescription = null,
+                            tint = CoralAccent,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    },
+                    title = {
+                        Text(
+                            text = "¿Eliminar este movimiento?",
+                            fontWeight = FontWeight.Bold,
+                            color = BurgundyDark,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    },
+                    text = {
+                        Column {
+                            Text(
+                                text = "${tx.displayTitle} • ${uiState.currentCurrency.format(tx.amount)}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Esta acción eliminará el registro y actualizará automáticamente tu balance pendiente.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                val toDelete = tx
+                                viewModel.deleteTransaction(toDelete)
+                                transactionToDelete = null
+                                coroutineScope.launch {
+                                    val result = snackbarHostState.showSnackbar(
+                                        message = "Movimiento eliminado",
+                                        actionLabel = "Deshacer",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                    if (result == SnackbarResult.ActionPerformed) {
+                                        viewModel.updateTransaction(toDelete)
+                                    }
+                                }
+                            },
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = CoralAccent,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text("Eliminar", fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = { transactionToDelete = null },
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text("Cancelar", color = TextSecondary, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                )
             }
 
             // Payment BottomSheet
