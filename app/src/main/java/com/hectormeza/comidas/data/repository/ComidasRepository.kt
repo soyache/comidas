@@ -1,12 +1,15 @@
 package com.hectormeza.comidas.data.repository
 
+import android.content.Context
 import com.hectormeza.comidas.data.local.ComidasDatabaseHelper
 import com.hectormeza.comidas.model.AppCurrency
 import com.hectormeza.comidas.model.MealType
 import com.hectormeza.comidas.model.Transaction
+import com.hectormeza.comidas.model.TransactionType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.util.UUID
 
 class ComidasRepository(
     private val dbHelper: ComidasDatabaseHelper
@@ -80,6 +83,50 @@ class ComidasRepository(
         _transactions.value = dbHelper.getAllTransactions()
     }
 
+    suspend fun addMealTransaction(
+        mealType: MealType,
+        quantity: Int,
+        timestamp: Long = System.currentTimeMillis(),
+        note: String? = null
+    ): Transaction {
+        val unitPrice = _mealPrices.value[mealType] ?: mealType.defaultPrice
+        val transaction = Transaction(
+            id = UUID.randomUUID().toString(),
+            type = TransactionType.MEAL,
+            amount = unitPrice * quantity,
+            mealType = mealType,
+            quantity = quantity,
+            note = note?.ifBlank { null },
+            timestamp = timestamp
+        )
+        addTransaction(transaction)
+        return transaction
+    }
+
+    suspend fun addCurrentMealFromClock(nowMillis: Long = System.currentTimeMillis()): Transaction {
+        return addMealTransaction(
+            mealType = MealType.detectAt(nowMillis),
+            quantity = 1,
+            timestamp = nowMillis
+        )
+    }
+
+    suspend fun addPastMeals(
+        mealTypes: Collection<MealType>,
+        quantity: Int,
+        dateMillis: Long,
+        note: String?
+    ): List<Transaction> {
+        return MealType.entries.filter { it in mealTypes }.map { mealType ->
+            addMealTransaction(
+                mealType = mealType,
+                quantity = quantity,
+                timestamp = mealType.timestampOnDate(dateMillis),
+                note = note
+            )
+        }
+    }
+
     suspend fun updateTransaction(transaction: Transaction) {
         dbHelper.insertTransaction(transaction)
         _transactions.value = dbHelper.getAllTransactions()
@@ -128,5 +175,16 @@ class ComidasRepository(
     companion object {
         private const val KEY_ACTIVE_CURRENCY_CODE = "active_currency_code"
         private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
+
+        @Volatile
+        private var instance: ComidasRepository? = null
+
+        fun getInstance(context: Context): ComidasRepository {
+            return instance ?: synchronized(this) {
+                instance ?: ComidasRepository(
+                    ComidasDatabaseHelper(context.applicationContext)
+                ).also { instance = it }
+            }
+        }
     }
 }

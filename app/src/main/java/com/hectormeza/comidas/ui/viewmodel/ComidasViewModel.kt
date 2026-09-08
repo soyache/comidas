@@ -5,7 +5,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.hectormeza.comidas.data.local.ComidasDatabaseHelper
 import com.hectormeza.comidas.data.repository.ComidasRepository
 import com.hectormeza.comidas.model.AppCurrency
 import com.hectormeza.comidas.model.MealType
@@ -89,40 +88,22 @@ class ComidasViewModel(
         }
     }
 
-    // Register a meal with quantity
+    // Register a meal with quantity (hora actual, mismo camino que el widget)
     fun addMeal(mealType: MealType, quantity: Int) {
         viewModelScope.launch {
-            val currentPrices = uiState.value.mealPrices
-            val unitPrice = currentPrices[mealType] ?: mealType.defaultPrice
-            val totalAmount = unitPrice * quantity
-            val newTx = Transaction(
-                id = UUID.randomUUID().toString(),
-                type = TransactionType.MEAL,
-                amount = totalAmount,
-                mealType = mealType,
-                quantity = quantity,
-                timestamp = System.currentTimeMillis()
-            )
-            repository.addTransaction(newTx)
+            repository.addMealTransaction(mealType, quantity)
         }
     }
 
-    // Register a past meal
-    fun addPastMeal(mealType: MealType, quantity: Int, timestamp: Long, note: String?) {
+    // Register one or more past meals; each selected time becomes its own row
+    fun addPastMeals(
+        mealTypes: Collection<MealType>,
+        quantity: Int,
+        dateMillis: Long,
+        note: String?
+    ) {
         viewModelScope.launch {
-            val currentPrices = uiState.value.mealPrices
-            val unitPrice = currentPrices[mealType] ?: mealType.defaultPrice
-            val totalAmount = unitPrice * quantity
-            val newTx = Transaction(
-                id = UUID.randomUUID().toString(),
-                type = TransactionType.MEAL,
-                amount = totalAmount,
-                mealType = mealType,
-                quantity = quantity,
-                note = note?.ifBlank { null },
-                timestamp = timestamp
-            )
-            repository.addTransaction(newTx)
+            repository.addPastMeals(mealTypes, quantity, dateMillis, note)
         }
     }
 
@@ -187,8 +168,7 @@ class ComidasViewModel(
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    val dbHelper = ComidasDatabaseHelper(application)
-                    val repository = ComidasRepository(dbHelper)
+                    val repository = ComidasRepository.getInstance(application)
                     return ComidasViewModel(application, repository) as T
                 }
             }

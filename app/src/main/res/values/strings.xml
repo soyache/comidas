@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Comidas</string>
+    <string name="widget_name">Gasto de Comida</string>
+    <string name="widget_cta">Registrar ahora</string>
+    <string name="widget_description">Registra el gasto de la hora actual, igual que el botón central.</string>
+    <string name="widget_meal_saved">%1$s registrado</string>
+    <string name="widget_meal_error">No se pudo registrar el gasto</string>
 </resources>

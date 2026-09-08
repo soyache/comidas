@@ -376,17 +376,24 @@ fun ComidasMainApp(
                     onDismiss = {
                         showPastMealSheet = false
                     },
-                    onConfirmPastMeal = { mealType, quantity, timestamp, note ->
-                        viewModel.addPastMeal(mealType, quantity, timestamp, note)
-                        val unitPrice = uiState.mealPrices[mealType] ?: mealType.defaultPrice
-                        val totalAmount = unitPrice * quantity
-                        val title = if (quantity > 1) "$quantity× ${mealType.displayName}" else mealType.displayName
+                    onConfirmPastMeals = { mealTypes, quantity, timestamp, note ->
+                        viewModel.addPastMeals(mealTypes, quantity, timestamp, note)
+                        val totalAmount = mealTypes.sumOf { mealType ->
+                            (uiState.mealPrices[mealType] ?: mealType.defaultPrice) * quantity
+                        }
+                        val title = if (mealTypes.size == 1) {
+                            val mealType = mealTypes.first()
+                            if (quantity > 1) "$quantity× ${mealType.displayName}" else mealType.displayName
+                        } else {
+                            mealTypes.joinToString(" + ") { it.displayName }
+                        }
                         val sdf = SimpleDateFormat("dd MMM", Locale.getDefault())
                         val dateStr = sdf.format(Date(timestamp))
+                        val savedWord = if (mealTypes.size > 1) "guardados" else "guardado"
 
                         coroutineScope.launch {
                             snackbarHostState.showSnackbar(
-                                message = "¡$title del $dateStr guardado! (+${uiState.currentCurrency.format(totalAmount)})",
+                                message = "¡$title del $dateStr $savedWord! (+${uiState.currentCurrency.format(totalAmount)})",
                                 duration = SnackbarDuration.Short
                             )
                         }
