@@ -16,8 +16,10 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Bedtime
@@ -88,7 +90,7 @@ fun AddPastMealBottomSheet(
     currency: AppCurrency,
     mealPrices: Map<MealType, Double>,
     onDismiss: () -> Unit,
-    onConfirmPastMeal: (mealType: MealType, quantity: Int, timestamp: Long, note: String?) -> Unit
+    onConfirmPastMeals: (mealTypes: Set<MealType>, quantity: Int, timestamp: Long, note: String?) -> Unit
 ) {
     val yesterday = remember {
         Calendar.getInstance().apply {
@@ -101,7 +103,7 @@ fun AddPastMealBottomSheet(
     }
 
     var selectedTimestamp by remember { mutableLongStateOf(yesterday) }
-    var selectedMealType by remember { mutableStateOf(MealType.LUNCH) }
+    var selectedMealTypes by remember { mutableStateOf(setOf(MealType.LUNCH)) }
     var quantity by remember { mutableIntStateOf(1) }
     var noteInput by remember { mutableStateOf("") }
     var showDatePickerDialog by remember { mutableStateOf(false) }
@@ -123,8 +125,9 @@ fun AddPastMealBottomSheet(
         initialSelectedDateMillis = initialUtcDateMillis
     )
 
-    val unitPrice = mealPrices[selectedMealType] ?: selectedMealType.defaultPrice
-    val totalPrice = unitPrice * quantity
+    val totalPrice = selectedMealTypes.sumOf { mealType ->
+        (mealPrices[mealType] ?: mealType.defaultPrice) * quantity
+    }
 
     val formattedSelectedDate = remember(selectedTimestamp) {
         val sdf = SimpleDateFormat("EEEE, dd 'de' MMMM yyyy", Locale.getDefault())
@@ -142,6 +145,7 @@ fun AddPastMealBottomSheet(
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .imePadding()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp, vertical = 12.dp)
         ) {
             // Header
@@ -158,7 +162,7 @@ fun AddPastMealBottomSheet(
                         color = TextPrimary
                     )
                     Text(
-                        text = "Agregá comidas de días anteriores a tu cuenta",
+                        text = "Podés marcar varios tiempos del mismo día",
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary
                     )
@@ -240,13 +244,18 @@ fun AddPastMealBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 2. Meal Type Selector
+            // 2. Meal Type Selector (multi-select: each time is saved as its own entry)
             Text(
-                text = "TIEMPO DE COMIDA",
+                text = "TIEMPOS DE COMIDA",
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = TextSecondary,
                 letterSpacing = 1.sp
+            )
+            Text(
+                text = "Marcá uno o varios. Cada tiempo se guarda por separado.",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -256,7 +265,7 @@ fun AddPastMealBottomSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 MealType.entries.forEach { mealType ->
-                    val isSelected = mealType == selectedMealType
+                    val isSelected = mealType in selectedMealTypes
                     val price = mealPrices[mealType] ?: mealType.defaultPrice
                     val chipBg by animateColorAsState(
                         targetValue = if (isSelected) BurgundyDark else SoftCardBg,
@@ -274,7 +283,17 @@ fun AddPastMealBottomSheet(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(16.dp))
-                            .clickable { selectedMealType = mealType },
+                            .clickable {
+                                selectedMealTypes = if (mealType in selectedMealTypes) {
+                                    if (selectedMealTypes.size == 1) {
+                                        selectedMealTypes
+                                    } else {
+                                        selectedMealTypes - mealType
+                                    }
+                                } else {
+                                    selectedMealTypes + mealType
+                                }
+                            },
                         shape = RoundedCornerShape(16.dp),
                         color = chipBg,
                         border = if (isSelected) null else BorderStroke(1.dp, CardBorder)
@@ -284,7 +303,7 @@ fun AddPastMealBottomSheet(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Icon(
-                                imageVector = icon,
+                                imageVector = if (isSelected) Icons.Rounded.Check else icon,
                                 contentDescription = null,
                                 tint = if (isSelected) Color.White else when (mealType) {
                                     MealType.BREAKFAST -> BreakfastAccent
@@ -327,7 +346,7 @@ fun AddPastMealBottomSheet(
                         letterSpacing = 1.sp
                     )
                     Text(
-                        text = "Número de porciones o platos",
+                        text = "Porciones por cada tiempo seleccionado",
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary
                     )
@@ -413,14 +432,15 @@ fun AddPastMealBottomSheet(
             // Summary & Confirm Button
             Button(
                 onClick = {
-                    onConfirmPastMeal(
-                        selectedMealType,
+                    onConfirmPastMeals(
+                        selectedMealTypes,
                         quantity,
                         selectedTimestamp,
                         noteInput.ifBlank { null }
                     )
                     onDismiss()
                 },
+                enabled = selectedMealTypes.isNotEmpty(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -441,7 +461,16 @@ fun AddPastMealBottomSheet(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Registrar $quantity ${if (quantity > 1) "comidas" else "comida"} (${currency.format(totalPrice)})",
+                        text = run {
+                            val mealCount = selectedMealTypes.size
+                            val totalItems = mealCount * quantity
+                            val label = if (mealCount == 1 && quantity == 1) {
+                                selectedMealTypes.first().displayName
+                            } else {
+                                "$totalItems ${if (totalItems == 1) "comida" else "comidas"}"
+                            }
+                            "Registrar $label (${currency.format(totalPrice)})"
+                        },
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     )
@@ -506,7 +535,7 @@ fun AddPastMealBottomSheetPreview() {
                 MealType.DINNER to 100.0
             ),
             onDismiss = {},
-            onConfirmPastMeal = { _, _, _, _ -> }
+            onConfirmPastMeals = { _, _, _, _ -> }
         )
     }
 }

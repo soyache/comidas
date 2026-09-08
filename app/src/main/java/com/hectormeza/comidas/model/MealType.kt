@@ -35,6 +35,16 @@ enum class MealType(
         endHour = 5
     );
 
+    fun timestampOnDate(dateMillis: Long): Long {
+        return Calendar.getInstance().apply {
+            timeInMillis = dateMillis
+            set(Calendar.HOUR_OF_DAY, startHour)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+    }
+
     companion object {
         fun detectCurrent(hour: Int = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)): MealType {
             return when (hour) {
@@ -42,6 +52,13 @@ enum class MealType(
                 in 12..17 -> LUNCH
                 else -> DINNER
             }
+        }
+
+        fun detectAt(timestampMillis: Long): MealType {
+            val hour = Calendar.getInstance().apply {
+                timeInMillis = timestampMillis
+            }.get(Calendar.HOUR_OF_DAY)
+            return detectCurrent(hour)
         }
     }
 }

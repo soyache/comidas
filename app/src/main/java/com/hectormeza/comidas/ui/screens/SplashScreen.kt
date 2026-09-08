@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hectormeza.comidas.BuildConfig
 import com.hectormeza.comidas.ui.components.BurgerCalculatorLogo
 import com.hectormeza.comidas.ui.theme.BurgundyDark
 import com.hectormeza.comidas.ui.theme.CoralAccent
@@ -119,7 +120,7 @@ fun SplashScreen(
                 .padding(bottom = 20.dp)
         ) {
             Text(
-                text = "v1.0.0",
+                text = "v${BuildConfig.VERSION_NAME}",
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.35f),
                 letterSpacing = 1.sp
