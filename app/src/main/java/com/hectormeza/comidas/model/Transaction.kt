@@ -4,6 +4,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+val SPANISH_LOCALE: Locale = Locale.forLanguageTag("es")
+
 enum class TransactionType {
     MEAL,
     PAYMENT
@@ -25,10 +27,7 @@ data class Transaction(
         }
 
     val formattedDate: String
-        get() {
-            val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-            return sdf.format(Date(timestamp))
-        }
+        get() = formatMovimientoDate(timestamp)
 
     val displayTitle: String
         get() = when (type) {
@@ -38,4 +37,15 @@ data class Transaction(
             }
             TransactionType.PAYMENT -> if (!note.isNullOrBlank()) "Abono - $note" else "Abono a deuda"
         }
+}
+
+fun formatMovimientoDate(timestamp: Long): String {
+    val date = Date(timestamp)
+    val weekday = SimpleDateFormat("EEEE", SPANISH_LOCALE)
+        .format(date)
+        .lowercase(SPANISH_LOCALE)
+    val dayMonthYear = SimpleDateFormat("d MMM yyyy", SPANISH_LOCALE)
+        .format(date)
+        .replace(".", "")
+    return "$weekday, $dayMonthYear"
 }
