@@ -71,6 +71,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hectormeza.comidas.model.AppCurrency
 import com.hectormeza.comidas.model.MealType
+import com.hectormeza.comidas.model.SPANISH_LOCALE
 import com.hectormeza.comidas.model.Transaction
 import com.hectormeza.comidas.model.TransactionType
 import com.hectormeza.comidas.ui.theme.BreakfastAccent
@@ -146,7 +147,7 @@ fun EditTransactionBottomSheet(
     val isValid = finalAmount > 0
 
     val formattedSelectedDate = remember(selectedTimestamp) {
-        val sdf = SimpleDateFormat("EEEE, dd 'de' MMMM yyyy", Locale.getDefault())
+        val sdf = SimpleDateFormat("EEEE, dd 'de' MMMM yyyy", SPANISH_LOCALE)
         sdf.format(Date(selectedTimestamp)).replaceFirstChar { it.uppercase() }
     }
 
